@@ -1,0 +1,66 @@
+---
+  ## Restauración del sistema de spectrum
+  ## Inicialmente se programa ejecutar el proceso en Red Hat 7.9 (pruebas satisfactorias)
+  ## Autor: Jorge Zavala Navarro
+  
+  ## Variables esperadas en el sistena
+  ## tipo_restaurar           --> Tipo de restauración que se desea realizar (NORMAL)
+  ## name_restaurar_file      --> Nombre y ruta del archivo a restaurar
+  
+
+  ## Variables del PlayBook
+  ## path_spectrum_root       --> Nombre y ruta de la carpeta en donde se encuentra instalado spectrum
+  ## cmd_comando_restaura     --> Nombre y ruta del comando a ejecutar
+  ## ruta_carpeta_backups     --> Nombre y ruta de la carpeta de los Backups de la base de datos
+
+- name: RESTAURAR EL SISTEMA DE SPECTRUM 10.4 EN LINUX RED HAT 7.9 ENTERPRISE CON SSdbsave
+  hosts: LineaComando
+  gather_facts: yes
+
+ 
+  vars:
+          repo_tag: spectrum_10_4
+
+          vars:
+                  path_spectrum_root: /usr/Spectrum
+                  cmd_comando_cargar: /SS-Tools/SSdbload -l
+                  cmd_comando_iniciar_cargar: /SS-Tools/SSdbload -i -l 
+                  cmd_comando_desarrollador: /SS-Tools/SSdbload -d
+                  archivo_bloqueo_ss: /SS/.VNMDB.LOCK
+                  archivo_bloqueo_ddm: /SS/DDM/.DDMDB.LOCK
+                  ruta_carpeta_backups: /home/jzavala/respaldos/Spectrum
+                  ruta_archivo_restaurar: '{{ ruta_carpeta_backups }}/{{ name_restaurar_file }}'
+  tasks:
+          
+          ## Validar si existe el archivo que se desea restaurar
+          - name: 'Validar si el archivo existe en {{ ruta_archivo_restaurar }}'
+            stat:
+                    path: '{{ ruta_archivo_restaurar }}'
+            register: stat_existe_respaldo
+
+          - name: 'Ejecutamos el restore si el archivo {{ ruta_archivo_restaurar }} existe'
+            command: '{{ path_spectrum_root }}/{{ cmd_comando_cargar }} {{ ruta_archivo_restaurar }}'
+            when:  stat_existe_respaldo.stat.exists and tipo_restaurar == "NORMAL"
+
+          - name: 'Ejecutamos la inicializaciòn y carga si el archivo {{ ruta_archivo_restaurar }} existe'
+            command: '{{ path_spectrum_root }}/{{ cmd_comando_iniciar_cargar }} {{ ruta_archivo_restaurar }}'
+            when:  stat_existe_respaldo.stat.exists and tipo_restaurar == "INICIALIZAR Y CARGA"
+
+          - name: 'Ejecutamos la restauraciòn para desarrollador si el archivo {{ ruta_archivo_restaurar }} existe'
+            command: '{{ path_spectrum_root }}/{{ cmd_comando_desarrollador }} {{ ruta_archivo_restaurar }}'
+            when:  stat_existe_respaldo.stat.exists and tipo_restaurar == "DESARROLLADOR"          
+
+          - name: Eliminar el archivo de bloqueo de SS
+            file:
+                    path: '{{ path_spectrum_root }}{{ archivo_bloqueo_ss }}'
+                    state: absent
+            when:  tipo_restaurar == "DESBLOQUEO"
+
+          - name: Eliminar el archivo de bloqueo de SS
+            file:
+                    path: '{{ path_spectrum_root }}{{ archivo_bloqueo_ddm }}'
+                    state: absent
+            when:  tipo_restaurar == "DESBLOQUEO"
+
+
+
