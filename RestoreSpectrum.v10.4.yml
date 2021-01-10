@@ -28,10 +28,26 @@
                   cmd_comando_desarrollador: /SS-Tools/SSdbload -d
                   archivo_bloqueo_ss: /SS/.VNMDB.LOCK
                   archivo_bloqueo_ddm: /SS/DDM/.DDMDB.LOCK
-                  ruta_carpeta_backups: /home/jzavala/respaldos/Spectrum
-                  ruta_archivo_restaurar: '{{ ruta_carpeta_backups }}/{{ name_restaurar_file }}'
+                  ruta_carpeta_backups: /root/db_20210110_1307.SSdb
+                  ruta_archivo_restaurar: /root/db_20210110_1307.SSdb
+                  path_repogit_dir: /home/Spectrum/git
+                  path_repogit_file: /home/Spectrum/git/ATower.RestoreSpectrum.V10.4.zip
+
   tasks:
           
+          - name: Descargar los recursos del git para este proyecto
+            git:
+                    repo: https://github.com/jzavala74mz/ATower.RestoreSpectrum.V10.4
+                    dest: '{{ path_repogit_dir }}'
+                    archive: '{{ path_repogit_file }}'
+
+
+
+          ## Transferimos el archivo a restaurar
+          - name: Transfiriendo archivo de Restauración
+            command: 'expect {{ path_repogit_dir }}/ScriptCopyRestore.sh'
+
+
           ## Validar si existe el archivo que se desea restaurar
           - name: 'Validar si el archivo existe en {{ ruta_archivo_restaurar }}'
             stat:
